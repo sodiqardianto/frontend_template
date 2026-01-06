@@ -1,6 +1,8 @@
 "use client"
 
-import { Bell, LogOut, User2, CreditCard, Settings as SettingsIcon, Sparkles } from "lucide-react"
+import { useState } from "react"
+import { Bell, LogOut, User2, CreditCard, Settings as SettingsIcon, Sparkles, Loader2 } from "lucide-react"
+import { logout } from "@/features/auth/services"
 
 import {
   Avatar,
@@ -42,7 +44,19 @@ export function AppHeader({
   title = "Dashboard",
   notifications = 5 
 }: AppHeaderProps) {
-  // const [searchQuery, setSearchQuery] = useState("")
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+      // Redirect to login page
+      window.location.href = "/login"
+    } catch (error) {
+      console.error("Logout failed:", error)
+      setIsLoggingOut(false)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b px-4 bg-background/95 backdrop-blur">
@@ -131,9 +145,17 @@ export function AppHeader({
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer bg-red-600 text-white focus:bg-red-700 focus:text-white my-1">
-                <LogOut className="mr-2 h-4 w-4 text-white" />
-                <span>Log out</span>
+              <DropdownMenuItem 
+                className="cursor-pointer rounded-md font-bold bg-red-600 text-white focus:bg-red-700 focus:text-white my-1"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="mr-2 h-4 w-4 text-white animate-spin" />
+                ) : (
+                  <LogOut className="mr-2 h-4 w-4 text-white" />
+                )}
+                <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -52,6 +52,21 @@ export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Men
       enableColumnFilter: true,
     },
     {
+      accessorKey: "order",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="Order" />
+      ),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.getValue("order")}</span>
+      ),
+      meta: {
+        label: "Order",
+        variant: "number",
+      },
+      enableSorting: true,
+      enableColumnFilter: false,
+    },
+    {
       accessorKey: "path",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} label="Path" />

@@ -1,13 +1,11 @@
 "use client";
 
-// import { Mail } from "lucide-react";
-// import { MainButton } from "@/components/shared/buttons/main-button";
-import { LoginForm } from "@/features/auth";
+import { RegisterForm } from "@/features/auth";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <section>
-      <div className="flex h-screen w-full flex-col items-center justify-center">
+      <div className="flex min-h-screen w-full flex-col items-center justify-center py-8">
         {/* Grid Pattern Background */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute inset-y-0 left-1/2 h-full w-[1200px] -translate-x-1/2">
@@ -40,23 +38,7 @@ export default function LoginPage() {
 
         {/* Main Content */}
         <div className="relative flex w-full flex-col items-center justify-center px-4">
-          <LoginForm />
-
-          {/* Divider */}
-          {/* <div className="w-full max-w-sm mt-6">
-            <div className="my-3 flex shrink items-center justify-center gap-2">
-              <div className="grow basis-0 border-b" />
-              <span className="text-xs font-medium uppercase leading-none text-muted-foreground">
-                or
-              </span>
-              <div className="grow basis-0 border-b" />
-            </div>
-
-            //* Google Login
-            <MainButton className="w-full" variant="outline" type="button" icon={<Mail className="size-4" />}>
-              Continue with Google
-            </MainButton>
-          </div> */}
+          <RegisterForm />
         </div>
       </div>
     </section>

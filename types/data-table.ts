@@ -13,6 +13,11 @@ declare module "@tanstack/react-table" {
     unit?: string;
     icon?: React.FC<React.SVGProps<SVGSVGElement>>;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface TableMeta<TData extends RowData> {
+    queryKeys?: Partial<QueryKeys>;
+  }
 }
 
 export interface QueryKeys {

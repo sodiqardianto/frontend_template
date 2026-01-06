@@ -30,12 +30,14 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useMenuStore } from "@/features/menus/stores/use-menu-store";
-import type { Menu } from "@/features/menus/lib/menu-validation";
+import type { Menu } from "@/features/menus/types";
+import { useEffect, useMemo } from "react";
+import { ElementType } from "react";
 
 // Helper to resolve icon component from string name
 const getIcon = (name?: string) => {
   if (!name) return LucideIcons.Circle;
-  const Icon = (LucideIcons as unknown as Record<string, React.ElementType>)[name];
+  const Icon = (LucideIcons as unknown as Record<string, ElementType>)[name];
   return Icon || LucideIcons.Circle;
 };
 
@@ -48,11 +50,11 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { menus, fetchMenus, isLoading } = useMenuStore();
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchMenus();
   }, [fetchMenus]);
 
-  const menuTree = React.useMemo(() => {
+  const menuTree = useMemo(() => {
     // Filter active menus only
     const activeMenus = menus.filter((m) => m.isActive);
 

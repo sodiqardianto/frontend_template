@@ -12,7 +12,7 @@ export function useMenuOperations() {
     setIsProcessing(true)
     try {
       await createMenu(data)
-      await fetchMenus()
+      await fetchMenus(true) // Force refresh
       toast.success("Menu created successfully")
       onSuccess?.()
     } catch (error) {
@@ -27,7 +27,7 @@ export function useMenuOperations() {
     setIsProcessing(true)
     try {
       await updateMenu(id, data)
-      await fetchMenus()
+      await fetchMenus(true) // Force refresh
       toast.success("Menu updated successfully")
       onSuccess?.()
     } catch (error) {
@@ -42,7 +42,7 @@ export function useMenuOperations() {
     setIsProcessing(true)
     try {
       await deleteMenu(id)
-      await fetchMenus()
+      await fetchMenus(true) // Force refresh
       toast.success("Menu deleted successfully")
       onSuccess?.()
     } catch (error) {
