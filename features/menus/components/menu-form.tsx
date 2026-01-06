@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { MainButton } from "@/components/shared/buttons/main-button"
+import { FormInput } from "@/components/shared/form-fields"
 
 import {
   Form,
@@ -16,7 +17,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -53,24 +53,20 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
       title: initialData?.title || "",
       path: initialData?.path || "",
       icon: initialData?.icon || "",
-      parentId: initialData?.parentId, // undefined default to show placeholder
+      parentId: initialData?.parentId,
       permission: initialData?.permission || undefined,
       isActive: initialData?.isActive ?? true,
     },
   })
 
-  // Watch parentId to toggle Icon visibility and requirement
   // eslint-disable-next-line react-hooks/incompatible-library
   const parentId = form.watch("parentId")
-  // Only show icon if explicitly Root (null). Hide if undefined (not selected) or string (submenu).
   const isRoot = parentId === null
 
   const handleSubmit = async (data: MenuFormValues) => {
-    // Ensure parentId is null if string "none" or empty
     if (data.parentId === "none" || !data.parentId) {
        data.parentId = null
     }
-    // If NOT root (submenu), clear icon value just in case
     if (data.parentId) {
       data.icon = undefined
     }
@@ -78,52 +74,30 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
   }
 
   const isSubmitting = form.formState.isSubmitting
-
-  // Filter out self from parent options to avoid infinite recursion
   const parentOptions = availableMenus.filter(m => m.id !== initialData?.id)
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         {/* Title */}
-        <FormField
+        <FormInput
           control={form.control}
           name="title"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Title <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Dashboard" 
-                  {...field} 
-                  disabled={isSubmitting} 
-                  className={cn(fieldState.error && "border-destructive! focus-visible:ring-destructive!")}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          label="Title"
+          placeholder="Dashboard"
+          disabled={isSubmitting}
+          required
         />
 
         {/* Path */}
-        <FormField
+        <FormInput
           control={form.control}
           name="path"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Path <span className="text-destructive">*</span></FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="/admin/dashboard" 
-                  {...field} 
-                  disabled={isSubmitting} 
-                  className={cn(fieldState.error && "border-destructive! focus-visible:ring-destructive!")}
-                />
-              </FormControl>
-              <FormDescription className="text-xs">Must start with /</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
+          label="Path"
+          placeholder="/admin/dashboard"
+          disabled={isSubmitting}
+          description="Must start with /"
+          required
         />
 
         {/* Parent Menu & Permission Grid */}
@@ -141,7 +115,7 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
                   disabled={isSubmitting}
                 >
                   <FormControl>
-                    <SelectTrigger className={cn(fieldState.error && "border-destructive! ring-destructive!")}>
+                    <SelectTrigger className={cn("w-full rounded-full", fieldState.error && "border-destructive! ring-destructive!")}>
                       <SelectValue placeholder="Select parent menu" />
                     </SelectTrigger>
                   </FormControl>
@@ -172,7 +146,7 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
                   disabled={isSubmitting}
                 >
                   <FormControl>
-                    <SelectTrigger className={cn(fieldState.error && "border-destructive! ring-destructive!")}>
+                    <SelectTrigger className={cn("w-full rounded-full", fieldState.error && "border-destructive! ring-destructive!")}>
                       <SelectValue placeholder="Select permission" />
                     </SelectTrigger>
                   </FormControl>
@@ -204,7 +178,7 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
                     onChange={field.onChange}
                     disabled={isSubmitting}
                     placeholder="Select an icon"
-                    className={cn(fieldState.error && "border-destructive! ring-destructive!")}
+                    className={cn("rounded-full", fieldState.error && "border-destructive! ring-destructive!")}
                   />
                 </FormControl>
                 <FormMessage />
@@ -227,7 +201,7 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
               </div>
               <FormControl>
                 <Switch
-                className="hover:cursor-pointer"
+                  className="hover:cursor-pointer"
                   checked={field.value}
                   onCheckedChange={field.onChange}
                   disabled={isSubmitting}

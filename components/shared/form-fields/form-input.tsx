@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,6 +22,7 @@ interface FormInputProps<TFieldValues extends FieldValues> {
   maxLength?: number;
   className?: string;
   required?: boolean;
+  description?: string;
 }
 
 /**
@@ -37,6 +39,7 @@ export function FormInput<TFieldValues extends FieldValues>({
   maxLength,
   className,
   required,
+  description,
 }: FormInputProps<TFieldValues>) {
   return (
     <FormField
@@ -59,6 +62,7 @@ export function FormInput<TFieldValues extends FieldValues>({
               {...field}
             />
           </FormControl>
+          {description && <FormDescription className="text-xs">{description}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}

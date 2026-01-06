@@ -27,7 +27,44 @@ export class ApiException extends Error {
 
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  _retry?: boolean;
 };
+
+// Track refresh state to prevent multiple simultaneous refresh calls
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function handleTokenRefresh(): Promise<boolean> {
+  if (isRefreshing) {
+    return refreshPromise!;
+  }
+
+  isRefreshing = true;
+  refreshPromise = refreshAccessToken();
+  
+  try {
+    const result = await refreshPromise;
+    return result;
+  } finally {
+    isRefreshing = false;
+    refreshPromise = null;
+  }
+}
 
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
@@ -46,17 +83,32 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { body, headers, ...rest } = options;
+  const { body, headers, _retry, ...rest } = options;
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...rest,
-    credentials: "include", // Send/receive httpOnly cookies
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  // Handle 401 - try to refresh token once
+  if (response.status === 401 && !_retry && !endpoint.includes("/auth/")) {
+    const refreshed = await handleTokenRefresh();
+    
+    if (refreshed) {
+      // Retry original request
+      return apiClient<T>(endpoint, { ...options, _retry: true });
+    }
+    
+    // Refresh failed - redirect to login
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
 
   return handleResponse<T>(response);
 }
