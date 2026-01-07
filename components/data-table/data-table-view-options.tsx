@@ -49,7 +49,7 @@ export function DataTableViewOptions<TData>({
           role="combobox"
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-8 font-normal lg:flex"
+          className="ml-auto hidden h-8 font-normal lg:flex rounded-full h-10 cursor-pointer"
           disabled={disabled}
         >
           <Settings2 className="text-muted-foreground" />

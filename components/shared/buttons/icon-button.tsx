@@ -2,23 +2,29 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 type ButtonProps = React.ComponentProps<typeof Button>
 
-// Keep it simple and reusable. 
-// Specific styles should be passed via className from the parent.
 interface IconButtonProps extends ButtonProps {
   icon: React.ReactNode
+  tooltip?: string
 }
 
 export function IconButton({ 
   icon, 
   className, 
   variant = "outline",
+  tooltip,
   ...props 
 }: IconButtonProps) {
-  return (
+  const button = (
     <Button
       variant={variant}
       size="icon"
@@ -30,5 +36,20 @@ export function IconButton({
     >
       {icon}
     </Button>
+  )
+
+  if (!tooltip) return button
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {button}
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

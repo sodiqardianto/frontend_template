@@ -55,6 +55,7 @@ import {
   SortableItemHandle,
   SortableOverlay,
 } from "@/components/ui/sortable";
+import { MainButton } from "@/components/shared/buttons/main-button";
 import { dataTableConfig } from "@/config/data-table";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { getDefaultFilterOperator, getFilterOperators } from "@/lib/data-table";
@@ -226,7 +227,7 @@ export function DataTableFilterList<TData>({
           <Button
             variant="outline"
             size="sm"
-            className="font-normal"
+            className="font-normal rounded-full h-10 cursor-pointer"
             onKeyDown={onTriggerKeyDown}
             disabled={disabled}
           >
@@ -245,7 +246,7 @@ export function DataTableFilterList<TData>({
         <PopoverContent
           aria-describedby={descriptionId}
           aria-labelledby={labelId}
-          className="flex w-full max-w-(--radix-popover-content-available-width) flex-col gap-3.5 p-4 sm:min-w-[380px]"
+          className="flex w-full max-w-(--radix-popover-content-available-width) flex-col gap-3.5 p-4 sm:min-w-[380px] rounded-xl"
           {...props}
         >
           <div className="flex flex-col gap-1">
@@ -287,23 +288,21 @@ export function DataTableFilterList<TData>({
             </SortableContent>
           ) : null}
           <div className="flex w-full items-center gap-2">
-            <Button
+            <MainButton
               size="sm"
-              className="rounded"
               ref={addButtonRef}
               onClick={onFilterAdd}
             >
               Add filter
-            </Button>
+            </MainButton>
             {filters.length > 0 ? (
-              <Button
+              <MainButton
                 variant="outline"
                 size="sm"
-                className="rounded"
                 onClick={onFiltersReset}
               >
                 Reset filters
-              </Button>
+              </MainButton>
             ) : null}
           </div>
         </PopoverContent>

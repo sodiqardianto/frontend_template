@@ -1,11 +1,12 @@
 "use client"
 
+import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Loader2 } from "lucide-react"
 
 import { MainButton } from "@/components/shared/buttons/main-button"
-import { FormInput, FormPasswordInput } from "@/components/shared/form-fields"
+import { FormInput, FormPasswordInput, FormMultiCombobox } from "@/components/shared/form-fields"
 
 import {
   Form,
@@ -19,16 +20,33 @@ import { Switch } from "@/components/ui/switch"
 import { createUserSchema, updateUserSchema } from "../schemas"
 import { User, UserFormValues } from "../types"
 
+interface Role {
+  id: string
+  name: string
+  description?: string | null
+}
+
 interface UserFormProps {
   initialData?: User
   onSubmit: (data: UserFormValues) => Promise<void>
   onCancel?: () => void
   isProcessing?: boolean
+  availableRoles?: Role[]
+  containerRef?: React.RefObject<HTMLElement | null>
 }
 
-export function UserForm({ initialData, onSubmit, onCancel, isProcessing }: UserFormProps) {
+export function UserForm({
+  initialData,
+  onSubmit,
+  onCancel,
+  isProcessing,
+  availableRoles = [],
+  containerRef
+}: UserFormProps) {
   const isEditing = !!initialData
-  
+
+  const initialRoleIds = initialData?.roles?.map(r => r.id) || []
+
   const form = useForm<UserFormValues>({
     resolver: zodResolver(isEditing ? updateUserSchema : createUserSchema),
     defaultValues: {
@@ -36,6 +54,7 @@ export function UserForm({ initialData, onSubmit, onCancel, isProcessing }: User
       email: initialData?.email || "",
       password: "",
       isActive: initialData?.isActive ?? true,
+      roleIds: initialRoleIds,
     },
   })
 
@@ -47,6 +66,11 @@ export function UserForm({ initialData, onSubmit, onCancel, isProcessing }: User
   }
 
   const isSubmitting = form.formState.isSubmitting
+
+  const roleOptions = availableRoles.map((role) => ({
+    value: role.id,
+    label: role.name,
+  }))
 
   return (
     <Form {...form}>
@@ -76,7 +100,7 @@ export function UserForm({ initialData, onSubmit, onCancel, isProcessing }: User
         <FormPasswordInput
           control={form.control}
           name="password"
-          label={isEditing ? "Password" : "Password"}
+          label="Password"
           placeholder={isEditing ? "Leave blank to keep current" : "Enter password"}
           disabled={isSubmitting}
           required={!isEditing}
@@ -88,12 +112,27 @@ export function UserForm({ initialData, onSubmit, onCancel, isProcessing }: User
           )}
         </FormPasswordInput>
 
+        {/* Roles */}
+        {availableRoles.length > 0 && (
+          <FormMultiCombobox
+            control={form.control}
+            name="roleIds"
+            label="Roles"
+            options={roleOptions}
+            placeholder="Select roles..."
+            emptyMessage="No roles found."
+            disabled={isSubmitting}
+            description="Assign one or more roles to this user"
+            containerRef={containerRef}
+          />
+        )}
+
         {/* Active Status */}
         <FormField
           control={form.control}
           name="isActive"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+            <FormItem className="flex flex-row items-center justify-between rounded-xl border p-3">
               <div className="space-y-0.5">
                 <FormLabel>Active</FormLabel>
                 <FormDescription>

@@ -10,9 +10,13 @@ const authRoutes = ["/login", "/register"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for access token in cookies (httpOnly cookie set by backend)
+  // Check for tokens in cookies (httpOnly cookies set by backend)
   const accessToken = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
+  
+  // User is authenticated if has valid access token OR has refresh token (can be refreshed)
   const isAuthenticated = !!accessToken;
+  const canRefresh = !!refreshToken;
 
   // Check if current path is protected
   const isProtectedRoute = protectedRoutes.some(
@@ -24,12 +28,13 @@ export function middleware(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  // Redirect to login if accessing protected route without auth
-  if (isProtectedRoute && !isAuthenticated) {
+  // Redirect to login if accessing protected route without any token
+  // If has refreshToken but no accessToken, let client-side handle refresh
+  if (isProtectedRoute && !isAuthenticated && !canRefresh) {
     const response = NextResponse.redirect(new URL("/login", request.url));
     // Store callback URL in cookie for redirect after login
     response.cookies.set("callbackUrl", pathname, {
-      httpOnly: false, // Allow JavaScript to read this
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 60 * 5, // 5 minutes
@@ -39,7 +44,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Redirect to admin if accessing auth routes while authenticated
-  if (isAuthRoute && isAuthenticated) {
+  if (isAuthRoute && (isAuthenticated || canRefresh)) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 

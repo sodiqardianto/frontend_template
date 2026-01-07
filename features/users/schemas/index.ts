@@ -16,6 +16,7 @@ export const userSchema = z.object({
     .min(1, "Name is required")
     .max(100, "Name must be less than 100 characters"),
   isActive: z.boolean(),
+  roleIds: z.array(z.string()).optional(),
 })
 
 // Schema for create (password required)

@@ -4,17 +4,17 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
-import type { User } from "@/features/users/types"
+import type { Permission } from "@/features/permissions/types"
 import { IconButton } from "@/components/shared/buttons"
 import { SquarePenIcon, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 
 interface GetColumnsProps {
-  onEdit: (user: User) => void
-  onDelete: (user: User) => void
+  onEdit: (permission: Permission) => void
+  onDelete: (permission: Permission) => void
 }
 
-export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<User>[] {
+export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Permission>[] {
   return [
     {
       id: "select",
@@ -46,6 +46,21 @@ export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Use
       header: ({ column }) => (
         <DataTableColumnHeader column={column} label="Name" />
       ),
+      cell: ({ row }) => {
+        const name = row.getValue("name") as string
+        const [resource, action] = name.split(":")
+        return (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="capitalize">
+              {resource}
+            </Badge>
+            <span className="text-muted-foreground">:</span>
+            <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+              {action}
+            </code>
+          </div>
+        )
+      },
       meta: {
         label: "Name",
         variant: "text",
@@ -54,69 +69,51 @@ export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Use
       enableColumnFilter: true,
     },
     {
-      accessorKey: "email",
+      id: "resource",
+      accessorFn: (row) => row.name.split(":")[0],
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Email" />
-      ),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.getValue("email")}</span>
-      ),
-      meta: {
-        label: "Email",
-        variant: "text",
-      },
-      enableSorting: true,
-      enableColumnFilter: true,
-    },
-    {
-      accessorKey: "roles",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Roles" />
+        <DataTableColumnHeader column={column} label="Resource" />
       ),
       cell: ({ row }) => {
-        const roles = row.original.roles || []
-        if (roles.length === 0) {
-          return <span className="text-muted-foreground text-sm">No roles</span>
-        }
+        const resource = row.original.name.split(":")[0]
         return (
-          <div className="flex flex-wrap gap-1">
-            {roles.map((role) => (
-              <Badge key={role.id} variant="secondary" className="text-xs">
-                {role.name}
-              </Badge>
-            ))}
-          </div>
-        )
-      },
-      enableSorting: false,
-      enableColumnFilter: false,
-    },
-    {
-      accessorKey: "isActive",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} label="Status" />
-      ),
-      cell: ({ row }) => {
-        const isActive = row.getValue("isActive") as boolean
-        return (
-          <Badge variant={isActive ? "default" : "secondary"}>
-            {isActive ? "Active" : "Inactive"}
+          <Badge variant="secondary" className="capitalize">
+            {resource}
           </Badge>
         )
       },
       filterFn: (row, id, value) => {
-        return value.includes(String(row.getValue(id)))
+        const resource = row.original.name.split(":")[0]
+        return value.includes(resource)
       },
       meta: {
-        label: "Status",
+        label: "Resource",
         variant: "select",
-        options: [
-          { label: "Active", value: "true" },
-          { label: "Inactive", value: "false" },
-        ],
+        options: [], // Will be populated dynamically
       },
       enableSorting: true,
       enableColumnFilter: true,
+    },
+    {
+      id: "action",
+      accessorFn: (row) => row.name.split(":")[1],
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} label="Action" />
+      ),
+      cell: ({ row }) => {
+        const action = row.original.name.split(":")[1]
+        return (
+          <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+            {action}
+          </code>
+        )
+      },
+      meta: {
+        label: "Action",
+        variant: "text",
+      },
+      enableSorting: true,
+      enableColumnFilter: false,
     },
     {
       accessorKey: "createdAt",
@@ -124,7 +121,7 @@ export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Use
         <DataTableColumnHeader column={column} label="Created At" />
       ),
       cell: ({ row }) => {
-        const date = row.getValue("createdAt") as Date | string | undefined
+        const date = row.getValue("createdAt") as string | undefined
         if (!date) return "-"
         return format(new Date(date), "dd MMM yyyy HH:mm")
       },

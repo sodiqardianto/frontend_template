@@ -1,3 +1,4 @@
+import * as React from "react"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ interface CrudModalProps {
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
-  children: React.ReactNode
+  children: React.ReactNode | ((containerRef: React.RefObject<HTMLDivElement | null>) => React.ReactNode)
 }
 
 export function CrudModal({
@@ -21,14 +22,16 @@ export function CrudModal({
   description,
   children,
 }: CrudModalProps) {
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px]" ref={containerRef}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        {children}
+        {typeof children === "function" ? children(containerRef) : children}
       </DialogContent>
     </Dialog>
   )

@@ -140,10 +140,19 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     (updaterOrValue: Updater<PaginationState>) => {
       if (typeof updaterOrValue === "function") {
         const newPagination = updaterOrValue(pagination);
-        void setPage(newPagination.pageIndex + 1);
+        // Reset to page 1 when page size changes
+        if (newPagination.pageSize !== pagination.pageSize) {
+          void setPage(1);
+        } else {
+          void setPage(newPagination.pageIndex + 1);
+        }
         void setPerPage(newPagination.pageSize);
       } else {
-        void setPage(updaterOrValue.pageIndex + 1);
+        if (updaterOrValue.pageSize !== pagination.pageSize) {
+          void setPage(1);
+        } else {
+          void setPage(updaterOrValue.pageIndex + 1);
+        }
         void setPerPage(updaterOrValue.pageSize);
       }
     },
@@ -271,7 +280,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     ...tableProps,
     columns,
     initialState,
-    pageCount,
+    ...(manualPagination && { pageCount }),
     state: {
       pagination,
       sorting,

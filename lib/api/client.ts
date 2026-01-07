@@ -32,7 +32,17 @@ type RequestOptions = Omit<RequestInit, "body"> & {
 
 // Track refresh state to prevent multiple simultaneous refresh calls
 let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
+let failedQueue: Array<{
+  resolve: (value: boolean) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+function processQueue(success: boolean) {
+  failedQueue.forEach((prom) => {
+    prom.resolve(success);
+  });
+  failedQueue = [];
+}
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
@@ -51,18 +61,23 @@ async function refreshAccessToken(): Promise<boolean> {
 
 async function handleTokenRefresh(): Promise<boolean> {
   if (isRefreshing) {
-    return refreshPromise!;
+    // If already refreshing, wait for the result
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    });
   }
 
   isRefreshing = true;
-  refreshPromise = refreshAccessToken();
   
   try {
-    const result = await refreshPromise;
+    const result = await refreshAccessToken();
+    processQueue(result);
     return result;
+  } catch (error) {
+    processQueue(false);
+    throw error;
   } finally {
     isRefreshing = false;
-    refreshPromise = null;
   }
 }
 
@@ -95,19 +110,24 @@ export async function apiClient<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Handle 401 - try to refresh token once
+  // Handle 401 - try to refresh token once (skip for auth endpoints)
   if (response.status === 401 && !_retry && !endpoint.includes("/auth/")) {
     const refreshed = await handleTokenRefresh();
     
     if (refreshed) {
-      // Retry original request
       return apiClient<T>(endpoint, { ...options, _retry: true });
     }
     
     // Refresh failed - redirect to login
     if (typeof window !== "undefined") {
+      sessionStorage.removeItem("user");
       window.location.href = "/login";
     }
+    
+    throw new ApiException(
+      { code: "UNAUTHORIZED", message: "Session expired" },
+      401
+    );
   }
 
   return handleResponse<T>(response);

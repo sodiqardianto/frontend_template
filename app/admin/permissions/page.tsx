@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input"
 import { CrudModal } from "@/components/modals/crud-modal"
 import { ConfirmModal } from "@/components/modals/confirm-modal"
 import { MainButton } from "@/components/shared/buttons"
-import { UserForm } from "@/features/users/components/user-form"
-import type { User, UserFormValues } from "@/features/users/types"
+import { PermissionForm } from "@/features/permissions/components/permission-form"
+import type { Permission, PermissionFormValues } from "@/features/permissions/types"
 import { useDataTable } from "@/hooks/use-data-table"
-import { getColumns } from "@/features/users/components/user-columns"
+import { getColumns } from "@/features/permissions/components/permission-columns"
 import { DataTable } from "@/components/data-table/data-table"
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar"
 import { DataTableFilterList } from "@/components/data-table/data-table-filter-list"
@@ -18,25 +18,18 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton"
 import { Plus } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { useUserOperations } from "@/features/users/hooks/use-user-operations"
-import { useUserStore } from "@/features/users/stores/use-user-store"
-import { api } from "@/lib/api"
+import { usePermissionOperations } from "@/features/permissions/hooks/use-permission-operations"
+import { usePermissionStore } from "@/features/permissions/stores/use-permission-store"
 
-interface Role {
-  id: string
-  name: string
-  description: string | null
-}
-
-export default function UsersPage() {
+export default function PermissionsPage() {
   return (
-    <Suspense fallback={<UsersPageSkeleton />}>
-      <UsersContent />
+    <Suspense fallback={<PermissionsPageSkeleton />}>
+      <PermissionsContent />
     </Suspense>
   )
 }
 
-function UsersPageSkeleton() {
+function PermissionsPageSkeleton() {
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
@@ -51,46 +44,33 @@ function UsersPageSkeleton() {
   )
 }
 
-function UsersContent() {
-  const { users, isLoading: isUserLoading, fetchUsers } = useUserStore()
+function PermissionsContent() {
+  const { permissions, isLoading: isPermissionLoading, fetchPermissions } = usePermissionStore()
   
   const [isInitialLoading, setIsInitialLoading] = useState(true)
-  const [roles, setRoles] = useState<Role[]>([])
-  const { isProcessing, create, update, remove } = useUserOperations()
+  const { isProcessing, create, update, remove } = usePermissionOperations()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [editingPermission, setEditingPermission] = useState<Permission | null>(null)
+  const [deletingPermission, setDeletingPermission] = useState<Permission | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [, rolesRes] = await Promise.all([
-          fetchUsers(),
-          api.get<{ data: Role[] }>("/roles")
-        ])
-        setRoles(rolesRes.data)
-      } finally {
-        setIsInitialLoading(false)
-      }
-    }
-    loadData()
-  }, [fetchUsers])
+    fetchPermissions().finally(() => setIsInitialLoading(false))
+  }, [fetchPermissions])
 
   const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return users
+    if (!searchQuery.trim()) return permissions
     const query = searchQuery.toLowerCase()
-    return users.filter((user) =>
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
+    return permissions.filter((permission) =>
+      permission.name.toLowerCase().includes(query)
     )
-  }, [searchQuery, users])
+  }, [searchQuery, permissions])
 
   const columns = useMemo(
     () =>
       getColumns({
-        onEdit: (user) => setEditingUser(user),
-        onDelete: (user) => setDeletingUser(user),
+        onEdit: (permission) => setEditingPermission(permission),
+        onDelete: (permission) => setDeletingPermission(permission),
       }),
     []
   )
@@ -98,7 +78,7 @@ function UsersContent() {
   const { table } = useDataTable({
     data: filteredData,
     columns,
-    pageCount: 1,
+    pageCount: -1,
     initialState: {
       sorting: [{ id: "name", desc: false }],
       pagination: { pageSize: 10, pageIndex: 0 },
@@ -106,39 +86,41 @@ function UsersContent() {
       columnVisibility: { createdAt: false },
     },
     getRowId: (row) => row.id,
+    manualPagination: false,
     manualSorting: false,
+    manualFiltering: false,
   })
 
-  const showSkeleton = (isUserLoading || isInitialLoading) && users.length === 0
+  const showSkeleton = (isPermissionLoading || isInitialLoading) && permissions.length === 0
 
-  const handleCreate = async (formData: UserFormValues) => {
+  const handleCreate = async (formData: PermissionFormValues) => {
     await create(formData, () => setIsCreateModalOpen(false))
   }
 
-  const handleUpdate = async (formData: UserFormValues) => {
-    if (!editingUser) return
-    await update(editingUser.id, formData, () => setEditingUser(null))
+  const handleUpdate = async (formData: PermissionFormValues) => {
+    if (!editingPermission) return
+    await update(editingPermission.id, formData, () => setEditingPermission(null))
   }
 
   const handleDelete = async () => {
-    if (!deletingUser) return
-    await remove(deletingUser.id, () => setDeletingUser(null))
+    if (!deletingPermission) return
+    await remove(deletingPermission.id, () => setDeletingPermission(null))
   }
 
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Permission Management</h1>
           <p className="text-muted-foreground">
-            Manage your application users
+            Manage application permissions
           </p>
         </div>
         <MainButton
           onClick={() => setIsCreateModalOpen(true)}
           icon={<Plus className="mr-2 h-4 w-4" />}
         >
-          Create User
+          Create Permission
         </MainButton>
       </div>
 
@@ -148,7 +130,7 @@ function UsersContent() {
         <DataTable table={table}>
           <DataTableAdvancedToolbar table={table}>
             <Input
-              placeholder="Search name or email..."
+              placeholder="Search permission..."
               value={searchQuery}
               onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(event.target.value)
@@ -162,45 +144,37 @@ function UsersContent() {
 
       {/* Create Modal */}
       <CrudModal
-        title="Create User"
-        description="Add a new user to your application"
+        title="Create Permission"
+        description="Add a new permission to your application"
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
       >
-        {(containerRef) => (
-          <UserForm 
-            onSubmit={handleCreate} 
-            isProcessing={isProcessing}
-            availableRoles={roles}
-            containerRef={containerRef}
-          />
-        )}
+        <PermissionForm 
+          onSubmit={handleCreate} 
+          isProcessing={isProcessing}
+        />
       </CrudModal>
 
       {/* Edit Modal */}
       <CrudModal
-        title="Edit User"
-        description="Make changes to the user account"
-        open={!!editingUser}
-        onOpenChange={(open) => !open && setEditingUser(null)}
+        title="Edit Permission"
+        description="Make changes to the permission"
+        open={!!editingPermission}
+        onOpenChange={(open) => !open && setEditingPermission(null)}
       >
-        {(containerRef) => (
-          <UserForm
-            onSubmit={handleUpdate}
-            initialData={editingUser || undefined}
-            isProcessing={isProcessing}
-            availableRoles={roles}
-            containerRef={containerRef}
-          />
-        )}
+        <PermissionForm
+          onSubmit={handleUpdate}
+          initialData={editingPermission || undefined}
+          isProcessing={isProcessing}
+        />
       </CrudModal>
 
       {/* Delete Confirmation */}
       <ConfirmModal
-        title="Delete User"
-        description="Are you sure you want to delete this user? This action cannot be undone."
-        open={!!deletingUser}
-        onOpenChange={(open) => !open && setDeletingUser(null)}
+        title="Delete Permission"
+        description="Are you sure you want to delete this permission? Roles with this permission will lose it."
+        open={!!deletingPermission}
+        onOpenChange={(open) => !open && setDeletingPermission(null)}
         onConfirm={handleDelete}
         isConfirming={isProcessing}
         variant="destructive"

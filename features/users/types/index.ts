@@ -1,9 +1,7 @@
-export type UserFormValues = {
-  id?: string
-  email: string
-  password?: string
+export type UserRole = {
+  id: string
   name: string
-  isActive: boolean
+  description: string | null
 }
 
 export type User = {
@@ -11,7 +9,17 @@ export type User = {
   email: string
   name: string
   isActive: boolean
-  createdAt?: Date
-  updatedAt?: Date
-  deletedAt?: Date | null
+  createdAt?: string
+  updatedAt?: string
+  deletedAt?: string | null
+  roles: UserRole[]
+}
+
+export type UserFormValues = {
+  id?: string
+  email: string
+  password?: string
+  name: string
+  isActive: boolean
+  roleIds?: string[]
 }

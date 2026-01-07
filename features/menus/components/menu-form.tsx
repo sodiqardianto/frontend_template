@@ -1,12 +1,13 @@
 "use client"
 
+import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { MainButton } from "@/components/shared/buttons/main-button"
-import { FormInput } from "@/components/shared/form-fields"
+import { FormInput, FormCombobox } from "@/components/shared/form-fields"
 
 import {
   Form,
@@ -17,17 +18,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { IconPicker } from "@/components/shared/icon-picker"
 import { menuSchema } from "../schemas"
 import { Menu, MenuFormValues } from "../types"
+
+interface Permission {
+  id: string
+  name: string
+}
 
 interface MenuFormProps {
   initialData?: Menu
@@ -35,18 +34,11 @@ interface MenuFormProps {
   onCancel?: () => void
   isProcessing?: boolean
   availableMenus?: Menu[]
+  availablePermissions?: Permission[]
+  containerRef?: React.RefObject<HTMLElement | null>
 }
 
-// Permission format: resource:action
-const AVAILABLE_PERMISSIONS = [
-  { value: "dashboard:view", label: "Dashboard - View" },
-  { value: "menus:view", label: "Menus - View" },
-  { value: "users:view", label: "Users - View" },
-  { value: "settings:view", label: "Settings - View" },
-  { value: "reports:view", label: "Reports - View" },
-]
-
-export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availableMenus = [] }: MenuFormProps) {
+export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availableMenus = [], availablePermissions = [], containerRef }: MenuFormProps) {
   const form = useForm<MenuFormValues>({
     resolver: zodResolver(menuSchema),
     defaultValues: {
@@ -64,17 +56,32 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
   const isRoot = parentId === null
 
   const handleSubmit = async (data: MenuFormValues) => {
-    if (data.parentId === "none" || !data.parentId) {
-       data.parentId = null
-    }
+    // Clear icon if not root level (has parent)
     if (data.parentId) {
-      data.icon = undefined
+      delete data.icon
     }
     await onSubmit(data)
   }
 
   const isSubmitting = form.formState.isSubmitting
-  const parentOptions = availableMenus.filter(m => m.id !== initialData?.id)
+  const filteredParentOptions = availableMenus.filter(m => m.id !== initialData?.id)
+
+  // Parent menu options with "None" option for root level
+  const parentMenuOptions = [
+    { value: "none", label: "None (Root Level)" },
+    ...filteredParentOptions.map((menu) => ({
+      value: menu.id,
+      label: menu.title,
+    })),
+  ]
+
+  // Filter only "view" permissions for menu
+  const permissionOptions = availablePermissions
+    .filter((perm) => perm.name.endsWith(":view"))
+    .map((perm) => ({
+      value: perm.name,
+      label: perm.name,
+    }))
 
   return (
     <Form {...form}>
@@ -103,64 +110,30 @@ export function MenuForm({ initialData, onSubmit, onCancel, isProcessing, availa
         {/* Parent Menu & Permission Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Parent Menu */}
-          <FormField
+          <FormCombobox
             control={form.control}
             name="parentId"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormLabel>Parent Menu <span className="text-destructive">*</span></FormLabel>
-                <Select
-                  onValueChange={(val) => field.onChange(val === "none" ? null : val)}
-                  value={field.value === null ? "none" : field.value}
-                  disabled={isSubmitting}
-                >
-                  <FormControl>
-                    <SelectTrigger className={cn("w-full rounded-full", fieldState.error && "border-destructive! ring-destructive!")}>
-                      <SelectValue placeholder="Select parent menu" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">None (Root Level)</SelectItem>
-                    {parentOptions.map((menu) => (
-                      <SelectItem key={menu.id} value={menu.id}>
-                        {menu.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Parent Menu"
+            options={parentMenuOptions}
+            placeholder="Select parent menu..."
+            emptyMessage="No menus found."
+            disabled={isSubmitting}
+            required
+            containerRef={containerRef}
+            nullValue="none"
           />
 
           {/* Permission */}
-          <FormField
+          <FormCombobox
             control={form.control}
             name="permission"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormLabel>Permission <span className="text-destructive">*</span></FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isSubmitting}
-                >
-                  <FormControl>
-                    <SelectTrigger className={cn("w-full rounded-full", fieldState.error && "border-destructive! ring-destructive!")}>
-                      <SelectValue placeholder="Select permission" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {AVAILABLE_PERMISSIONS.map((perm) => (
-                      <SelectItem key={perm.value} value={perm.value}>
-                        {perm.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Permission"
+            options={permissionOptions}
+            placeholder="Select permission..."
+            emptyMessage="No permissions found."
+            disabled={isSubmitting}
+            required
+            containerRef={containerRef}
           />
         </div>
 
