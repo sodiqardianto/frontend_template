@@ -1,4 +1,4 @@
-import { api } from "@/lib/api"
+import { api, apiClient } from "@/lib/api"
 import { Role, RoleFormValues } from "../types"
 
 interface RoleResponse {
@@ -7,6 +7,10 @@ interface RoleResponse {
 
 interface RolesResponse {
   data: Role[]
+}
+
+interface BulkDeleteResponse {
+  data: { deletedCount: number }
 }
 
 export const getRoles = async (): Promise<Role[]> => {
@@ -31,4 +35,12 @@ export const updateRole = async (id: string, data: RoleFormValues): Promise<Role
 
 export const deleteRole = async (id: string): Promise<void> => {
   await api.delete(`/roles/${id}`)
+}
+
+export const deleteRoles = async (ids: string[]): Promise<{ deletedCount: number }> => {
+  const response = await apiClient<BulkDeleteResponse>("/roles/bulk", {
+    method: "DELETE",
+    body: { ids },
+  })
+  return response.data
 }

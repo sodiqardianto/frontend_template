@@ -1,4 +1,4 @@
-import { api } from "@/lib/api"
+import { api, apiClient } from "@/lib/api"
 import { Permission, PermissionFormValues } from "../types"
 
 interface PermissionResponse {
@@ -31,4 +31,16 @@ export const updatePermission = async (id: string, data: PermissionFormValues): 
 
 export const deletePermission = async (id: string): Promise<void> => {
   await api.delete(`/permissions/${id}`)
+}
+
+interface BulkDeleteResponse {
+  data: { deletedCount: number }
+}
+
+export const deletePermissions = async (ids: string[]): Promise<{ deletedCount: number }> => {
+  const response = await apiClient<BulkDeleteResponse>("/permissions/bulk", {
+    method: "DELETE",
+    body: { ids },
+  })
+  return response.data
 }

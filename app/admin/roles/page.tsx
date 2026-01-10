@@ -15,6 +15,7 @@ import { DataTable } from "@/components/data-table/data-table"
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar"
 import { DataTableFilterList } from "@/components/data-table/data-table-filter-list"
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton"
+import { DataTableBulkActions } from "@/components/data-table/data-table-bulk-actions"
 import { Plus } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -52,10 +53,11 @@ function RolesContent() {
   
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [permissions, setPermissions] = useState<Permission[]>([])
-  const { isProcessing, create, update, remove } = useRoleOperations()
+  const { isProcessing, create, update, remove, bulkRemove } = useRoleOperations()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [deletingRole, setDeletingRole] = useState<Role | null>(null)
+  const [bulkDeletingIds, setBulkDeletingIds] = useState<string[] | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
 
   const canCreate = can("roles:create")
@@ -126,6 +128,14 @@ function RolesContent() {
     await remove(deletingRole.id, () => setDeletingRole(null))
   }
 
+  const handleBulkDelete = async () => {
+    if (!bulkDeletingIds || bulkDeletingIds.length === 0) return
+    await bulkRemove(bulkDeletingIds, () => {
+      setBulkDeletingIds(null)
+      table.resetRowSelection()
+    })
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
@@ -159,6 +169,13 @@ function RolesContent() {
               className="h-10 w-[150px] lg:w-[250px] rounded-full"
             />
             <DataTableFilterList table={table} />
+            {canDelete && (
+              <DataTableBulkActions
+                table={table}
+                onBulkDelete={(ids) => setBulkDeletingIds(ids)}
+                isDeleting={isProcessing}
+              />
+            )}
           </DataTableAdvancedToolbar>
         </DataTable>
       )}
@@ -199,6 +216,17 @@ function RolesContent() {
         open={!!deletingRole}
         onOpenChange={(open) => !open && setDeletingRole(null)}
         onConfirm={handleDelete}
+        isConfirming={isProcessing}
+        variant="destructive"
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmModal
+        title="Delete Selected Roles"
+        description={`Are you sure you want to delete ${bulkDeletingIds?.length ?? 0} role(s)? Users with these roles will lose associated permissions.`}
+        open={!!bulkDeletingIds}
+        onOpenChange={(open) => !open && setBulkDeletingIds(null)}
+        onConfirm={handleBulkDelete}
         isConfirming={isProcessing}
         variant="destructive"
       />

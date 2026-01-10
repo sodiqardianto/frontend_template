@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { createRole, updateRole, deleteRole } from "../api/role-api"
+import { createRole, updateRole, deleteRole, deleteRoles } from "../api/role-api"
 import { useRoleStore } from "../stores/use-role-store"
 import { RoleFormValues } from "../types"
 
@@ -53,5 +53,21 @@ export function useRoleOperations() {
     }
   }
 
-  return { isProcessing, create, update, remove }
+  const bulkRemove = async (ids: string[], onSuccess?: () => void) => {
+    setIsProcessing(true)
+    try {
+      const result = await deleteRoles(ids)
+      await fetchRoles(true)
+      toast.success(`${result.deletedCount} role(s) deleted successfully`)
+      onSuccess?.()
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to delete roles")
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return { isProcessing, create, update, remove, bulkRemove }
 }
+

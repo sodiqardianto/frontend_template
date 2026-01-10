@@ -1,4 +1,4 @@
-import { api } from "@/lib/api"
+import { api, apiClient } from "@/lib/api"
 import { User, UserFormValues } from "../types"
 
 interface UserResponse {
@@ -7,6 +7,10 @@ interface UserResponse {
 
 interface UsersResponse {
   data: User[]
+}
+
+interface BulkDeleteResponse {
+  data: { deletedCount: number }
 }
 
 export const getUsers = async (): Promise<User[]> => {
@@ -31,4 +35,12 @@ export const updateUser = async (id: string, data: UserFormValues): Promise<User
 
 export const deleteUser = async (id: string): Promise<void> => {
   await api.delete(`/users/${id}`)
+}
+
+export const deleteUsers = async (ids: string[]): Promise<{ deletedCount: number }> => {
+  const response = await apiClient<BulkDeleteResponse>("/users/bulk", {
+    method: "DELETE",
+    body: { ids },
+  })
+  return response.data
 }

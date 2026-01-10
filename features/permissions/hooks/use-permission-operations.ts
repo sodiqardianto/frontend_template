@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { createPermission, updatePermission, deletePermission } from "../api/permission-api"
+import { createPermission, updatePermission, deletePermission, deletePermissions } from "../api/permission-api"
 import { usePermissionStore } from "../stores/use-permission-store"
 import { PermissionFormValues } from "../types"
 
@@ -53,5 +53,21 @@ export function usePermissionOperations() {
     }
   }
 
-  return { isProcessing, create, update, remove }
+  const bulkRemove = async (ids: string[], onSuccess?: () => void) => {
+    setIsProcessing(true)
+    try {
+      const result = await deletePermissions(ids)
+      await fetchPermissions(true)
+      toast.success(`${result.deletedCount} permission(s) deleted successfully`)
+      onSuccess?.()
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to delete permissions")
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return { isProcessing, create, update, remove, bulkRemove }
 }
+

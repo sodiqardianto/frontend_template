@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { createUser, updateUser, deleteUser } from "../api/user-api"
+import { createUser, updateUser, deleteUser, deleteUsers } from "../api/user-api"
 import { useUserStore } from "../stores/use-user-store"
 import { UserFormValues } from "../types"
 
@@ -53,5 +53,21 @@ export function useUserOperations() {
     }
   }
 
-  return { isProcessing, create, update, remove }
+  const bulkRemove = async (ids: string[], onSuccess?: () => void) => {
+    setIsProcessing(true)
+    try {
+      const result = await deleteUsers(ids)
+      await fetchUsers(true)
+      toast.success(`${result.deletedCount} user(s) deleted successfully`)
+      onSuccess?.()
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to delete users")
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return { isProcessing, create, update, remove, bulkRemove }
 }
+
