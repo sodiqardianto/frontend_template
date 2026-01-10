@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { toast } from "sonner"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AppHeader } from "@/components/app-header"
+import { AuthGuard } from "@/components/auth-guard"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 export default function AdminLayout({
@@ -27,14 +28,16 @@ export default function AdminLayout({
   }, [])
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <AppHeader title="Dashboard" notifications={5} />
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <AuthGuard>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <AppHeader title="Dashboard" notifications={5} />
+          <div className="flex flex-1 flex-col gap-4 p-4">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </AuthGuard>
   )
 }

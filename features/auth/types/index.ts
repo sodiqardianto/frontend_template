@@ -6,6 +6,7 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  permissions: string[];
 }
 
 export interface Tokens {

@@ -10,12 +10,14 @@ import { SquarePenIcon, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 
 interface GetColumnsProps {
-  onEdit: (user: User) => void
-  onDelete: (user: User) => void
+  onEdit?: (user: User) => void
+  onDelete?: (user: User) => void
 }
 
 export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<User>[] {
-  return [
+  const showActions = onEdit || onDelete
+  
+  const columns: ColumnDef<User>[] = [
     {
       id: "select",
       size: 20,
@@ -136,28 +138,37 @@ export function getColumns({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Use
       enableColumnFilter: false,
       enableHiding: true,
     },
-    {
+  ]
+
+  if (showActions) {
+    columns.push({
       id: "actions",
       size: 100,
       header: () => <div className="text-right text-muted-foreground">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
-          <IconButton
-            icon={<SquarePenIcon className="h-4 w-4" />}
-            tooltip="Edit"
-            className="text-yellow-500 bg-yellow-50 hover:bg-yellow-500 hover:text-white hover:border-yellow-500 border-input"
-            onClick={() => onEdit(row.original)}
-          />
-          <IconButton
-            icon={<Trash2 className="h-4 w-4" />}
-            tooltip="Delete"
-            className="text-destructive bg-destructive/10 hover:bg-destructive hover:text-white hover:border-destructive border-input"
-            onClick={() => onDelete(row.original)}
-          />
+          {onEdit && (
+            <IconButton
+              icon={<SquarePenIcon className="h-4 w-4" />}
+              tooltip="Edit"
+              className="text-yellow-500 bg-yellow-50 hover:bg-yellow-500 hover:text-white hover:border-yellow-500 border-input"
+              onClick={() => onEdit(row.original)}
+            />
+          )}
+          {onDelete && (
+            <IconButton
+              icon={<Trash2 className="h-4 w-4" />}
+              tooltip="Delete"
+              className="text-destructive bg-destructive/10 hover:bg-destructive hover:text-white hover:border-destructive border-input"
+              onClick={() => onDelete(row.original)}
+            />
+          )}
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
-    },
-  ]
+    })
+  }
+
+  return columns
 }

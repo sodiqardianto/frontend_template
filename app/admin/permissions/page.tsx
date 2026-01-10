@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { usePermissionOperations } from "@/features/permissions/hooks/use-permission-operations"
 import { usePermissionStore } from "@/features/permissions/stores/use-permission-store"
+import { usePermissions } from "@/hooks/use-permissions"
 
 export default function PermissionsPage() {
   return (
@@ -46,6 +47,7 @@ function PermissionsPageSkeleton() {
 
 function PermissionsContent() {
   const { permissions, isLoading: isPermissionLoading, fetchPermissions } = usePermissionStore()
+  const { can } = usePermissions()
   
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const { isProcessing, create, update, remove } = usePermissionOperations()
@@ -53,6 +55,10 @@ function PermissionsContent() {
   const [editingPermission, setEditingPermission] = useState<Permission | null>(null)
   const [deletingPermission, setDeletingPermission] = useState<Permission | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const canCreate = can("permission:create")
+  const canUpdate = can("permission:update")
+  const canDelete = can("permission:delete")
 
   useEffect(() => {
     fetchPermissions().finally(() => setIsInitialLoading(false))
@@ -69,10 +75,10 @@ function PermissionsContent() {
   const columns = useMemo(
     () =>
       getColumns({
-        onEdit: (permission) => setEditingPermission(permission),
-        onDelete: (permission) => setDeletingPermission(permission),
+        onEdit: canUpdate ? (permission) => setEditingPermission(permission) : undefined,
+        onDelete: canDelete ? (permission) => setDeletingPermission(permission) : undefined,
       }),
-    []
+    [canUpdate, canDelete]
   )
 
   const { table } = useDataTable({
@@ -116,12 +122,14 @@ function PermissionsContent() {
             Manage application permissions
           </p>
         </div>
-        <MainButton
-          onClick={() => setIsCreateModalOpen(true)}
-          icon={<Plus className="mr-2 h-4 w-4" />}
-        >
-          Create Permission
-        </MainButton>
+        {canCreate && (
+          <MainButton
+            onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus className="mr-2 h-4 w-4" />}
+          >
+            Create Permission
+          </MainButton>
+        )}
       </div>
 
       {showSkeleton ? (

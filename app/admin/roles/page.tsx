@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { useRoleOperations } from "@/features/roles/hooks/use-role-operations"
 import { useRoleStore } from "@/features/roles/stores/use-role-store"
+import { usePermissions } from "@/hooks/use-permissions"
 import { api } from "@/lib/api"
 
 export default function RolesPage() {
@@ -47,6 +48,7 @@ function RolesPageSkeleton() {
 
 function RolesContent() {
   const { roles, isLoading: isRoleLoading, fetchRoles } = useRoleStore()
+  const { can } = usePermissions()
   
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [permissions, setPermissions] = useState<Permission[]>([])
@@ -55,6 +57,10 @@ function RolesContent() {
   const [editingRole, setEditingRole] = useState<Role | null>(null)
   const [deletingRole, setDeletingRole] = useState<Role | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const canCreate = can("roles:create")
+  const canUpdate = can("roles:update")
+  const canDelete = can("roles:delete")
 
   useEffect(() => {
     const loadData = async () => {
@@ -84,10 +90,10 @@ function RolesContent() {
   const columns = useMemo(
     () =>
       getColumns({
-        onEdit: (role) => setEditingRole(role),
-        onDelete: (role) => setDeletingRole(role),
+        onEdit: canUpdate ? (role) => setEditingRole(role) : undefined,
+        onDelete: canDelete ? (role) => setDeletingRole(role) : undefined,
       }),
-    []
+    [canUpdate, canDelete]
   )
 
   const { table } = useDataTable({
@@ -129,12 +135,14 @@ function RolesContent() {
             Manage roles and their permissions
           </p>
         </div>
-        <MainButton
-          onClick={() => setIsCreateModalOpen(true)}
-          icon={<Plus className="mr-2 h-4 w-4" />}
-        >
-          Create Role
-        </MainButton>
+        {canCreate && (
+          <MainButton
+            onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus className="mr-2 h-4 w-4" />}
+          >
+            Create Role
+          </MainButton>
+        )}
       </div>
 
       {showSkeleton ? (

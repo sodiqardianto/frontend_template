@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as LucideIcons from "lucide-react";
@@ -8,6 +7,7 @@ import {
   ChevronDown,
   Settings,
   BookOpen,
+  LayoutGrid,
 } from "lucide-react";
 
 import {
@@ -30,6 +30,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useMenuStore } from "@/features/menus/stores/use-menu-store";
+import { useAuthStore } from "@/features/auth/stores/use-auth-store";
 import type { Menu } from "@/features/menus/types";
 import { useEffect, useMemo } from "react";
 import { ElementType } from "react";
@@ -48,27 +49,28 @@ type MenuNode = Menu & {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { menus, fetchMenus, isLoading } = useMenuStore();
+  const { menus, fetchMenus, isLoading, error } = useMenuStore();
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
-    fetchMenus();
+    fetchMenus(true);
   }, [fetchMenus]);
 
+  const userPermissions = useMemo(() => {
+    return user?.permissions || [];
+  }, [user]);
+
   const menuTree = useMemo(() => {
-    // Filter active menus only
     const activeMenus = menus.filter((m) => m.isActive);
 
-    // Build tree
     const menuMap = new Map<string, MenuNode>();
-    // First pass: create nodes
+    
     activeMenus.forEach((menu) => {
       menuMap.set(menu.id, { ...menu, items: [] });
     });
 
     const tree: MenuNode[] = [];
     
-    // Second pass: link parents and children
-    // We sort by order first to ensure proper display order
     activeMenus
       .sort((a, b) => (a.order || 0) - (b.order || 0))
       .forEach((menu) => {
@@ -76,13 +78,35 @@ export function AppSidebar() {
         if (node) {
           if (menu.parentId && menuMap.has(menu.parentId)) {
             menuMap.get(menu.parentId)!.items.push(node);
-          } else {
+          } else if (!menu.parentId) {
             tree.push(node);
           }
         }
       });
-    return tree;
-  }, [menus]);
+
+    const hasPermission = (menu: MenuNode): boolean => {
+      if (!menu.permission) return true;
+      return userPermissions.includes(menu.permission);
+    };
+
+    const filterByPermissions = (nodes: MenuNode[]): MenuNode[] => {
+      return nodes
+        .map((node) => {
+          if (!hasPermission(node)) return null;
+
+          const filteredChildren = filterByPermissions(node.items);
+          
+          if (node.items.length > 0 && filteredChildren.length === 0) {
+            return null;
+          }
+          
+          return { ...node, items: filteredChildren };
+        })
+        .filter((node): node is MenuNode => node !== null);
+    };
+
+    return filterByPermissions(tree);
+  }, [menus, userPermissions]);
 
   const renderMenuItem = (item: MenuNode) => {
     const Icon = getIcon(item.icon);
@@ -102,8 +126,8 @@ export function AppSidebar() {
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
                 tooltip={item.title}
-                className="rounded-2xl"
-                isActive={isActive}
+                className="rounded-2xl cursor-pointer"
+                isActive={isActive || isChildActive}
               >
                 <Icon className="size-4" />
                 <span>{item.title}</span>
@@ -174,8 +198,25 @@ export function AppSidebar() {
           <SidebarGroupContent>
             {isLoading ? (
               <div className="p-4 text-sm text-muted-foreground">Loading menus...</div>
+            ) : error ? (
+              <div className="p-4 text-sm text-destructive">Error: {error}</div>
             ) : (
               <SidebarMenu>
+                {/* Dashboard - always visible */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="Dashboard"
+                    isActive={pathname === "/admin"}
+                    className="rounded-2xl"
+                  >
+                    <Link href="/admin">
+                      <LayoutGrid className="size-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {/* Dynamic menus from database */}
                 {menuTree.map((item) => renderMenuItem(item))}
               </SidebarMenu>
             )}

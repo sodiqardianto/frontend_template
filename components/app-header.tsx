@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, LogOut, User2, CreditCard, Settings as SettingsIcon, Sparkles, Loader2 } from "lucide-react"
+import { Bell, LogOut, User2, Loader2 } from "lucide-react"
 import { logout } from "@/features/auth/services"
+import { useAuthStore } from "@/features/auth/stores/use-auth-store"
 
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -25,19 +25,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-// import { Input } from "@/components/ui/input"
-// import { useState } from "react"
 
 interface AppHeaderProps {
   title?: string
   notifications?: number
-}
-
-// User data
-const user = {
-  name: "Admin User",
-  email: "admin@example.com",
-  avatar: "/avatars/shadcn.jpg",
 }
 
 export function AppHeader({ 
@@ -45,12 +36,15 @@ export function AppHeader({
   notifications = 5 
 }: AppHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const user = useAuthStore((state) => state.user)
+
+  const userName = user?.name || "User"
+  const userEmail = user?.email || ""
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
       await logout()
-      // Redirect to login page
       window.location.href = "/login"
     } catch (error) {
       console.error("Logout failed:", error)
@@ -63,27 +57,8 @@ export function AppHeader({
       <SidebarTrigger />
       <div className="flex flex-1 items-center justify-between gap-4">
         <h1 className="text-xl font-semibold">{title}</h1>
-        
-        {/* Search Input - Desktop Only */}
-        {/* <div className="hidden md:flex flex-1 max-w-md">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 rounded-2xl bg-gray-100 border-border focus-visible:ring-1"
-            />
-          </div>
-        </div> */}
 
         <div className="flex items-center gap-3">
-          {/* TODO: Implement Cloud Storage and Messages buttons
-           * Add cloud storage integration
-           * Add messaging system
-           */}
-
           {/* Notifications */}
           <TooltipProvider>
             <Tooltip>
@@ -110,9 +85,8 @@ export function AppHeader({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 cursor-pointer">
                 <Avatar className="h-9 w-9 border-2 border-primary">
-                  <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user.name.split(" ").map(n => n[0]).join("")}
+                    {userName.split(" ").map((n: string) => n[0].toUpperCase()).join("")}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -120,29 +94,17 @@ export function AppHeader({
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.name}</p>
+                  <p className="text-sm font-medium leading-none">{userName}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
+                    {userEmail}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Sparkles className="mr-2 h-4 w-4" />
-                <span>Upgrade to Pro</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User2 className="mr-2 h-4 w-4" />
                 <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <SettingsIcon className="mr-2 h-4 w-4" />
-                <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 

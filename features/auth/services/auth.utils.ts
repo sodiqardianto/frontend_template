@@ -1,7 +1,9 @@
+import { useAuthStore } from "@/features/auth/stores/use-auth-store";
 import { authService } from "./auth.service";
 
 /**
  * Get current user from session storage
+ * @deprecated Use useAuthStore instead for reactive updates
  */
 export function getCurrentUser() {
   if (typeof window === "undefined") return null;
@@ -26,7 +28,7 @@ export function isAuthenticated(): boolean {
 }
 
 /**
- * Logout user - clears cookies via API and session storage
+ * Logout user - clears cookies via API and all local state
  */
 export async function logout(): Promise<void> {
   try {
@@ -35,10 +37,8 @@ export async function logout(): Promise<void> {
     // Ignore errors - cookies will still be cleared by the server
   }
 
-  // Clear session storage
-  if (typeof window !== "undefined") {
-    sessionStorage.removeItem("user");
-  }
+  // Clear all local state
+  clearAuthState();
 }
 
 /**
@@ -48,4 +48,7 @@ export function clearAuthState(): void {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem("user");
   }
+  
+  // Clear Zustand store
+  useAuthStore.getState().clearUser();
 }

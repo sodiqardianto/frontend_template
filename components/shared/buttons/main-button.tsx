@@ -18,7 +18,7 @@ export function MainButton({
 }: MainButtonProps) {
   return (
     <Button
-      className={cn("rounded-full hover:cursor-pointer", className)}
+      className={cn("rounded-full hover:cursor-pointer h-10", className)}
       {...props}
     >
       {icon}

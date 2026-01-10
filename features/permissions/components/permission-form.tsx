@@ -49,7 +49,7 @@ export function PermissionForm({
           label="Name"
           placeholder="users:create"
           disabled={isSubmitting}
-          description="Format: resource:action (e.g., users:create, menus:view)"
+          description="Format: resource:action (e.g., users:create, master-data:view)"
           required
         />
 

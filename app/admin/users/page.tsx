@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { useUserOperations } from "@/features/users/hooks/use-user-operations"
 import { useUserStore } from "@/features/users/stores/use-user-store"
+import { usePermissions } from "@/hooks/use-permissions"
 import { api } from "@/lib/api"
 
 interface Role {
@@ -53,6 +54,7 @@ function UsersPageSkeleton() {
 
 function UsersContent() {
   const { users, isLoading: isUserLoading, fetchUsers } = useUserStore()
+  const { can } = usePermissions()
   
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [roles, setRoles] = useState<Role[]>([])
@@ -61,6 +63,10 @@ function UsersContent() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const canCreate = can("users:create")
+  const canUpdate = can("users:update")
+  const canDelete = can("users:delete")
 
   useEffect(() => {
     const loadData = async () => {
@@ -89,10 +95,10 @@ function UsersContent() {
   const columns = useMemo(
     () =>
       getColumns({
-        onEdit: (user) => setEditingUser(user),
-        onDelete: (user) => setDeletingUser(user),
+        onEdit: canUpdate ? (user) => setEditingUser(user) : undefined,
+        onDelete: canDelete ? (user) => setDeletingUser(user) : undefined,
       }),
-    []
+    [canUpdate, canDelete]
   )
 
   const { table } = useDataTable({
@@ -134,12 +140,14 @@ function UsersContent() {
             Manage your application users
           </p>
         </div>
-        <MainButton
-          onClick={() => setIsCreateModalOpen(true)}
-          icon={<Plus className="mr-2 h-4 w-4" />}
-        >
-          Create User
-        </MainButton>
+        {canCreate && (
+          <MainButton
+            onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus className="mr-2 h-4 w-4" />}
+          >
+            Create User
+          </MainButton>
+        )}
       </div>
 
       {showSkeleton ? (

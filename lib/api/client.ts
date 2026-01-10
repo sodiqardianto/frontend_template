@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/features/auth/stores/use-auth-store";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface ApiErrorDetail {
@@ -121,6 +123,7 @@ export async function apiClient<T>(
     // Refresh failed - redirect to login
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("user");
+      useAuthStore.getState().clearUser();
       window.location.href = "/login";
     }
     

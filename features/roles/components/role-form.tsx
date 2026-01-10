@@ -111,54 +111,122 @@ export function RoleForm({
           <FormField
             control={form.control}
             name="permissionIds"
-            render={() => (
-              <FormItem>
-                <div className="mb-2">
-                  <FormLabel>Permissions</FormLabel>
-                  <FormDescription>
-                    Select permissions for this role
-                  </FormDescription>
-                </div>
-                <div className="space-y-4 max-h-60 overflow-y-auto border rounded-lg p-3">
-                  {Object.entries(groupedPermissions).map(([resource, permissions]) => (
-                    <div key={resource}>
-                      <h4 className="text-sm font-medium capitalize mb-2">{resource}</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {permissions.map((permission) => (
-                          <FormField
-                            key={permission.id}
-                            control={form.control}
-                            name="permissionIds"
-                            render={({ field }) => (
-                              <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(permission.id)}
-                                    onCheckedChange={(checked) => {
-                                      const current = field.value || []
-                                      if (checked) {
-                                        field.onChange([...current, permission.id])
-                                      } else {
-                                        field.onChange(current.filter((id) => id !== permission.id))
-                                      }
-                                    }}
-                                    disabled={isSubmitting}
-                                  />
-                                </FormControl>
-                                <FormLabel className="text-sm font-normal cursor-pointer">
-                                  {permission.name.split(":")[1]}
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                        ))}
-                      </div>
+            render={({ field }) => {
+              const allPermissionIds = availablePermissions.map(p => p.id)
+              const isAllSelected = allPermissionIds.every(id => field.value?.includes(id))
+              const isSomeSelected = allPermissionIds.some(id => field.value?.includes(id)) && !isAllSelected
+
+              const handleSelectAll = () => {
+                if (isAllSelected) {
+                  field.onChange([])
+                } else {
+                  field.onChange(allPermissionIds)
+                }
+              }
+
+              const handleSelectAllResource = (permissions: Permission[]) => {
+                const resourceIds = permissions.map(p => p.id)
+                const current = field.value || []
+                const allResourceSelected = resourceIds.every(id => current.includes(id))
+                
+                if (allResourceSelected) {
+                  field.onChange(current.filter(id => !resourceIds.includes(id)))
+                } else {
+                  const newIds = [...new Set([...current, ...resourceIds])]
+                  field.onChange(newIds)
+                }
+              }
+
+              return (
+                <FormItem>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <FormLabel>Permissions</FormLabel>
+                      <FormDescription>
+                        Select permissions for this role
+                      </FormDescription>
                     </div>
-                  ))}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
+                    <button
+                      type="button"
+                      onClick={handleSelectAll}
+                      disabled={isSubmitting}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-all border",
+                        isAllSelected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : isSomeSelected
+                            ? "bg-primary/50 text-primary-foreground border-primary/50"
+                            : "bg-muted/50 text-muted-foreground border-gray-200 hover:bg-muted hover:border-border",
+                        isSubmitting && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {isAllSelected ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                  <div className="space-y-3 max-h-64 overflow-y-auto border rounded-2xl p-4 bg-muted/30">
+                    {Object.entries(groupedPermissions).map(([resource, permissions]) => {
+                      const resourceIds = permissions.map(p => p.id)
+                      const isResourceAllSelected = resourceIds.every(id => field.value?.includes(id))
+                      const isResourceSomeSelected = resourceIds.some(id => field.value?.includes(id)) && !isResourceAllSelected
+
+                      return (
+                        <div key={resource} className="bg-background rounded-xl p-3 shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold capitalize text-primary">{resource}</h4>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectAllResource(permissions)}
+                              disabled={isSubmitting}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs cursor-pointer transition-all border",
+                                isResourceAllSelected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : isResourceSomeSelected
+                                    ? "bg-primary/50 text-primary-foreground border-primary/50"
+                                    : "bg-muted/50 text-muted-foreground border-gray-200 hover:bg-muted hover:border-border",
+                                isSubmitting && "opacity-50 cursor-not-allowed"
+                              )}
+                            >
+                              All
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {permissions.map((permission) => {
+                              const isChecked = field.value?.includes(permission.id)
+                              return (
+                                <button
+                                  key={permission.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const current = field.value || []
+                                    if (isChecked) {
+                                      field.onChange(current.filter((id) => id !== permission.id))
+                                    } else {
+                                      field.onChange([...current, permission.id])
+                                    }
+                                  }}
+                                  disabled={isSubmitting}
+                                  className={cn(
+                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-all border",
+                                    isChecked
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-muted/50 text-muted-foreground border-gray-200 hover:bg-muted hover:border-border",
+                                    isSubmitting && "opacity-50 cursor-not-allowed"
+                                  )}
+                                >
+                                  {permission.name.split(":")[1]}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
         )}
 

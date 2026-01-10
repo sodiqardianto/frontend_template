@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { cn } from "@/lib/utils"
 
 interface ConfirmModalProps {
   open: boolean
@@ -44,18 +45,17 @@ export function ConfirmModal({
           )}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isConfirming}>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel className="cursor-pointer" disabled={isConfirming}>{cancelText}</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
               onConfirm()
             }}
             disabled={isConfirming}
-            className={
-              variant === "destructive"
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                : ""
-            }
+            className={cn(
+              variant === "destructive" &&
+                "bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+            )}
           >
             {confirmText}
           </AlertDialogAction>
