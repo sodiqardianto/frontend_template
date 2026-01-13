@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Suspense, useState, useMemo, useEffect } from "react"
+import { Suspense, useState, useMemo, useEffect, useCallback } from "react"
 
 import { Input } from "@/components/ui/input"
 import { CrudModal } from "@/components/modals/crud-modal"
@@ -20,8 +20,9 @@ import { Plus } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import { useUserOperations } from "@/features/users/hooks/use-user-operations"
-import { useUserStore } from "@/features/users/stores/use-user-store"
+import { useUsersQuery } from "@/features/users/hooks/use-users-query"
 import { usePermissions } from "@/hooks/use-permissions"
+import { useServerSearch } from "@/hooks/use-server-search"
 import { api } from "@/lib/api"
 
 interface Role {
@@ -54,7 +55,7 @@ function UsersPageSkeleton() {
 }
 
 function UsersContent() {
-  const { users, isLoading: isUserLoading, fetchUsers } = useUserStore()
+  const { data: users, pagination, isLoading, refetch } = useUsersQuery()
   const { can } = usePermissions()
   
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -64,17 +65,47 @@ function UsersContent() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [deletingUser, setDeletingUser] = useState<User | null>(null)
   const [bulkDeletingIds, setBulkDeletingIds] = useState<string[] | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
+  
+  // Server-side state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [sortField, setSortField] = useState("createdAt")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
   const canCreate = can("users:create")
   const canUpdate = can("users:update")
   const canDelete = can("users:delete")
 
+  // Debounced search using reusable hook
+  const { searchValue, handleSearchChange, debouncedValue } = useServerSearch(
+    (search) => {
+      setCurrentPage(1) // Reset to first page on search
+      refetch({
+        page: 1,
+        limit: pageSize,
+        sort: `${sortField}:${sortOrder}`,
+        search: search || undefined,
+      })
+    },
+    { delay: 500 }
+  )
+
+  // Fetch data when pagination/sorting changes
+  const fetchData = useCallback(() => {
+    refetch({
+      page: currentPage,
+      limit: pageSize,
+      sort: `${sortField}:${sortOrder}`,
+      search: debouncedValue || undefined,
+    })
+  }, [currentPage, pageSize, sortField, sortOrder, debouncedValue, refetch])
+
+  // Initial load
   useEffect(() => {
-    const loadData = async () => {
+    const loadInitialData = async () => {
       try {
         const [, rolesRes] = await Promise.all([
-          fetchUsers(),
+          refetch({ page: 1, limit: 10, sort: "createdAt:desc" }),
           api.get<{ data: Role[] }>("/roles")
         ])
         setRoles(rolesRes.data)
@@ -82,17 +113,9 @@ function UsersContent() {
         setIsInitialLoading(false)
       }
     }
-    loadData()
-  }, [fetchUsers])
-
-  const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return users
-    const query = searchQuery.toLowerCase()
-    return users.filter((user) =>
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
-    )
-  }, [searchQuery, users])
+    loadInitialData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const columns = useMemo(
     () =>
@@ -103,34 +126,83 @@ function UsersContent() {
     [canUpdate, canDelete]
   )
 
+  // Calculate page count from server response
+  const pageCount = pagination?.totalPages ?? 1
+
   const { table } = useDataTable({
-    data: filteredData,
+    data: users,
     columns,
-    pageCount: 1,
+    pageCount,
     initialState: {
-      sorting: [{ id: "name", desc: false }],
-      pagination: { pageSize: 10, pageIndex: 0 },
+      sorting: [{ id: "createdAt", desc: true }],
+      pagination: { pageSize, pageIndex: currentPage - 1 },
       columnPinning: { right: ["actions"] },
       columnVisibility: { createdAt: false },
     },
     getRowId: (row) => row.id,
-    manualSorting: false,
+    manualPagination: true,  // ✅ Server-side pagination
+    manualSorting: true,     // ✅ Server-side sorting
+    manualFiltering: true,   // ✅ Server-side filtering
   })
 
-  const showSkeleton = (isUserLoading || isInitialLoading) && users.length === 0
+  // Extract table state for dependency tracking
+  const tableState = table.getState()
+  const tablePagination = tableState.pagination
+  const tableSorting = tableState.sorting
+
+  // Sync table state changes to trigger refetch
+  useEffect(() => {
+    const { pageIndex, pageSize: newPageSize } = tablePagination
+    const newPage = pageIndex + 1
+    
+    if (newPage !== currentPage || newPageSize !== pageSize) {
+      setCurrentPage(newPage)
+      setPageSize(newPageSize)
+    }
+  }, [tablePagination, currentPage, pageSize])
+
+  // Handle sorting changes
+  useEffect(() => {
+    if (tableSorting.length > 0) {
+      const newField = tableSorting[0].id
+      const newOrder = tableSorting[0].desc ? "desc" : "asc"
+      if (newField !== sortField || newOrder !== sortOrder) {
+        setSortField(newField)
+        setSortOrder(newOrder)
+      }
+    }
+  }, [tableSorting, sortField, sortOrder])
+
+  // Refetch when page/sort changes (not on initial load)
+  useEffect(() => {
+    if (!isInitialLoading) {
+      fetchData()
+    }
+  }, [currentPage, pageSize, sortField, sortOrder, fetchData, isInitialLoading])
+
+  const showSkeleton = (isLoading || isInitialLoading) && users.length === 0
 
   const handleCreate = async (formData: UserFormValues) => {
-    await create(formData, () => setIsCreateModalOpen(false))
+    await create(formData, () => {
+      setIsCreateModalOpen(false)
+      fetchData() // Refresh data
+    })
   }
 
   const handleUpdate = async (formData: UserFormValues) => {
     if (!editingUser) return
-    await update(editingUser.id, formData, () => setEditingUser(null))
+    await update(editingUser.id, formData, () => {
+      setEditingUser(null)
+      fetchData() // Refresh data
+    })
   }
 
   const handleDelete = async () => {
     if (!deletingUser) return
-    await remove(deletingUser.id, () => setDeletingUser(null))
+    await remove(deletingUser.id, () => {
+      setDeletingUser(null)
+      fetchData() // Refresh data
+    })
   }
 
   const handleBulkDelete = async () => {
@@ -138,6 +210,7 @@ function UsersContent() {
     await bulkRemove(bulkDeletingIds, () => {
       setBulkDeletingIds(null)
       table.resetRowSelection()
+      fetchData() // Refresh data
     })
   }
 
@@ -148,6 +221,11 @@ function UsersContent() {
           <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
           <p className="text-muted-foreground">
             Manage your application users
+            {pagination && (
+              <span className="ml-2 text-sm">
+                ({pagination.total} total)
+              </span>
+            )}
           </p>
         </div>
         {canCreate && (
@@ -167,10 +245,8 @@ function UsersContent() {
           <DataTableAdvancedToolbar table={table}>
             <Input
               placeholder="Search name or email..."
-              value={searchQuery}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(event.target.value)
-              }
+              value={searchValue}
+              onChange={handleSearchChange}
               className="h-10 w-[150px] lg:w-[250px] rounded-full"
             />
             <DataTableFilterList table={table} />
