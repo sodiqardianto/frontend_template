@@ -1,3 +1,13 @@
+# ================================
+# Docker Compose - Base Configuration
+# ================================
+# This file contains the base/production configuration.
+# For development, create docker-compose.override.yml from the example file.
+#
+# Usage:
+#   Development: docker compose up -d --build (auto-loads override.yml)
+#   Production:  docker compose -f docker-compose.yml up -d --build
+
 services:
   # ================================
   # Frontend Application
@@ -6,17 +16,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3010/api}
         NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Frontend Template}
     container_name: frontend_template_app
     restart: unless-stopped
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-    ports:
-      - "${PORT:-3011}:3011"
+      NODE_ENV: production
+    expose:
+      - "3000"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3011"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       start_period: 10s

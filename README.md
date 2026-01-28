@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend Template
+
+A modern Next.js admin dashboard template with authentication, role-based access control, and dynamic menu management.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Styling:** Tailwind CSS
+- **UI Components:** Radix UI, shadcn/ui
+- **State Management:** Zustand
+- **Form Handling:** React Hook Form + Zod
+- **Data Table:** TanStack Table
+- **Drag & Drop:** dnd-kit
+
+## Features
+
+- Authentication (Login/Register)
+- Role-based access control (RBAC)
+- Dynamic menu management with drag & drop reorder
+- User management
+- Permission management
+- Responsive sidebar with collapsible menus
+- Dark/Light mode support
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 22+
+- Docker & Docker Compose (optional)
+
+### Backend
+
+This project requires a backend API. Use the companion backend template:
+
+👉 **[backend_template](https://github.com/sodiqardianto/backend_template)**
+
+### Environment Variables
+
+Create `.env.local` file:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3010/api
+NEXT_PUBLIC_APP_NAME=Frontend Template
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Run development server
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000)
 
-To learn more about Next.js, take a look at the following resources:
+## Docker
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Development (with hot reload)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Setup override file
+cp docker-compose.override.yml.example docker-compose.override.yml
 
-## Deploy on Vercel
+# Run
+docker compose up -d --build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Access: `http://localhost:3011`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Production (local test)
+
+```bash
+# Stop development first
+docker compose down
+
+# Run production
+docker compose -f docker-compose.yml up -d --build
+```
+
+Access: `http://localhost:3000`
+
+### Production (deployment)
+
+For production deployment, remove `ports` mapping in `docker-compose.yml` and use `expose` only. Configure reverse proxy (nginx/traefik) to handle external traffic.
+
+## Project Structure
+
+```
+├── app/                  # Next.js App Router pages
+├── components/           # Reusable UI components
+│   ├── ui/              # Base UI components (shadcn)
+│   ├── data-table/      # Data table components
+│   ├── modals/          # Modal components
+│   └── shared/          # Shared components
+├── features/            # Feature modules
+│   ├── auth/            # Authentication
+│   ├── menus/           # Menu management
+│   ├── users/           # User management
+│   ├── roles/           # Role management
+│   └── permissions/     # Permission management
+├── hooks/               # Custom React hooks
+├── lib/                 # Utilities and API client
+└── types/               # TypeScript types
+```
+
+## License
+
+MIT

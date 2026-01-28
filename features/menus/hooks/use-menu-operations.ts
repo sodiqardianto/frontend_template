@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { createMenu, updateMenu, deleteMenu } from "../api/menu-api"
+import { createMenu, updateMenu, deleteMenu, reorderMenus, ReorderMenuItem } from "../api/menu-api"
 import { useMenuStore } from "../stores/use-menu-store"
 import { MenuFormValues } from "../types"
 
@@ -12,7 +12,7 @@ export function useMenuOperations() {
     setIsProcessing(true)
     try {
       await createMenu(data)
-      await fetchMenus(true) // Force refresh
+      await fetchMenus(true)
       toast.success("Menu created successfully")
       onSuccess?.()
     } catch (error) {
@@ -27,7 +27,7 @@ export function useMenuOperations() {
     setIsProcessing(true)
     try {
       await updateMenu(id, data)
-      await fetchMenus(true) // Force refresh
+      await fetchMenus(true)
       toast.success("Menu updated successfully")
       onSuccess?.()
     } catch (error) {
@@ -42,7 +42,7 @@ export function useMenuOperations() {
     setIsProcessing(true)
     try {
       await deleteMenu(id)
-      await fetchMenus(true) // Force refresh
+      await fetchMenus(true)
       toast.success("Menu deleted successfully")
       onSuccess?.()
     } catch (error) {
@@ -53,5 +53,17 @@ export function useMenuOperations() {
     }
   }
 
-  return { isProcessing, create, update, remove }
+  const reorder = async (items: ReorderMenuItem[]) => {
+    try {
+      await reorderMenus(items)
+      await fetchMenus(true)
+      toast.success("Menu order updated")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to reorder menus")
+      await fetchMenus(true)
+    }
+  }
+
+  return { isProcessing, create, update, remove, reorder }
 }

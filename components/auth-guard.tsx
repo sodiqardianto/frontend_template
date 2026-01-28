@@ -38,7 +38,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       // Helper to clear session and redirect
       const clearAndRedirect = async () => {
         clearAuthState();
-        
+
         // Call logout endpoint to clear httpOnly cookies from server
         try {
           await fetch(`${API_URL}/auth/logout`, {
@@ -49,7 +49,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
         } catch {
           // Ignore logout errors
         }
-        
+
         if (isMounted) {
           setStatus("redirecting");
         }
@@ -84,15 +84,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data = userData as { data: any };
         const user = data.data;
-        
+
         // Sync user to store
         setUser(user);
-        
+
         // Also sync to sessionStorage for backward compatibility
         if (typeof window !== "undefined") {
           sessionStorage.setItem("user", JSON.stringify(user));
         }
-        
+
         if (isMounted) {
           setStatus("authenticated");
         }
@@ -111,11 +111,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
         // If 401, try to refresh token and retry
         if (response.status === 401) {
           const refreshed = await refreshToken();
-          
+
           if (refreshed) {
             // Retry fetching user after refresh
             response = await fetchUser();
-            
+
             if (response.ok) {
               const userData = await response.json();
               handleSuccess(userData);
@@ -144,10 +144,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">
-            {status === "loading" ? "Memvalidasi sesi..." : "Mengalihkan..."}
-          </p>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       </div>
     );

@@ -1,0 +1,33 @@
+# ================================
+# Docker Compose - Development Override (EXAMPLE)
+# ================================
+# Copy this file to docker-compose.override.yml for local development.
+# The override file is automatically loaded by docker compose.
+#
+# Setup:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#
+# Usage:
+#   docker compose up -d --build
+
+services:
+  app:
+    build:
+      target: development
+    container_name: frontend_template_app_dev
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3011:3011"
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      # Preserve node_modules from container (anonymous volumes)
+      - /app/node_modules
+      - /app/.next
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3011"]
+      # Development may take longer to start
+      start_period: 30s

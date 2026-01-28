@@ -27,3 +27,13 @@ export const updateMenu = async (id: string, data: MenuFormValues): Promise<Menu
 export const deleteMenu = async (id: string): Promise<void> => {
   await api.delete(`/menus/${id}`)
 }
+
+export interface ReorderMenuItem {
+  id: string
+  parentId: string | null
+  order: number
+}
+
+export const reorderMenus = async (items: ReorderMenuItem[]): Promise<void> => {
+  await api.patch("/menus/reorder", { items })
+}
